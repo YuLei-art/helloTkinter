@@ -8,8 +8,6 @@ from tkinter import *
 from tkinter.ttk import *
 from tkinter import messagebox
 
-
-
 class MainWindow(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -27,7 +25,7 @@ class MainWindow(tk.Tk):
         self.frame_bottom = tk.Frame(width=600,height=90)
 
         # 定义上部分区域
-        self.lb_tip = tk.Label(self.frame_top,text="评议小组")
+        self.lb_tip = tk.Label(self.frame_top,text="小组名称")
         self.string = tk.StringVar()
         self.string.set("")
         self.ent_find_name = tk.Entry(self.frame_top,textvariable=self.string)
@@ -37,7 +35,7 @@ class MainWindow(tk.Tk):
         self.btn_query.grid(row=0, column=2, padx=30, pady=30)
 
         # 定义下部分区域
-        self.btn_delete = tk.Button(self.frame_bottom, text="删除")
+        self.btn_delete = tk.Button(self.frame_bottom, text="删除",command=self.deleteGroup)
         self.btn_update = tk.Button(self.frame_bottom, text="修改")
         self.btn_add = tk.Button(self.frame_bottom, text="添加",command=self.addGroup)
         self.btn_delete.grid(row=0, column=0, padx=20, pady=30)
@@ -46,7 +44,7 @@ class MainWindow(tk.Tk):
 
 
         # 定义中心列表区域
-        self.tree = ttk.Treeview(self.frame_center, show="headings", height=8, columns=("a", "b", "c", "d"))
+        self.tree = ttk.Treeview(self.frame_center, show="headings", height=8, columns=("a", "b", "c", "d"),selectmode=BROWSE)
         self.vbar = ttk.Scrollbar(self.frame_center, orient=tk.VERTICAL, command=self.tree.yview)
         # 定义树形结构与滚动条
         self.tree.configure(yscrollcommand=self.vbar.set)
@@ -89,11 +87,8 @@ class MainWindow(tk.Tk):
 
     # 数据初始化获取
     def init_data(self):
-        result = self.opr.query()
-        if self.opr.queryStatus:
-            return 0
-        else:
-            return result
+        result = self.opr.queryall()
+        return result
 
     # 表格内容插入
     def get_tree(self):
@@ -110,85 +105,73 @@ class MainWindow(tk.Tk):
             # TODO 此处需解决因主程序自动刷新引起的列表项选中后重置的情况，我采用的折中方法是：把选中时的数据保存下来，作为记录
             # 绑定列表项单击事件
 
-            self.tree.bind("<ButtonRelease-1>", self.tree_item_click)
-            self.tree.after(500, self.get_tree)
+            # self.tree.bind("<ButtonRelease-1>", self.tree_item_click)
+            self.tree.bind("<<TreeviewSelect>>", self.treeSelect)
+            # self.tree.after(500, self.get_tree)
 
-    # 为解决窗体自动刷新的问题，记录下单击项的内容
-    def tree_item_click(self, event):
-        try:
+    # 单击选中
+    def treeSelect(self, event):
+        var = len(self.tree.selection())
+        if var != 0:
             selection = self.tree.selection()[0]
             self.data = self.tree.item(selection, "values")
-            self.item_selection = self.data[0]
-        except IndexError:
-            tkinter.messagebox.showinfo("单击警告", "单击结果范围异常，请重新选择！")
+            print(self.data)
+        else:
+            print(var)
+            tkinter.messagebox.showinfo("提示", "没有选择到哇")
+
+    # 单击查询按钮触发的事件方法
+    # def query(self):
+    #     query_info = self.ent_find_name.get()
+    #     self.string.set('')
+    #     if query_info is None or query_info == '':
+    #         # tkinter.messagebox.showinfo("警告", "查询条件不能为空！")
+    #         self.get_tree()
+    #     else:
+    #         strSql = "where name like '%"+  query_info + "%'"
+    #         result = self.opr.query(queryby=strSql)
+    #         self.get_tree()
+    #         if self.opr.queryStatus:
+    #             tkinter.messagebox.showinfo("警告", "查询出错，请检查数据库服务是否正常")
+    #         elif not result:
+    #             tkinter.messagebox.showinfo("查询结果", "没有查到数据！")
+    #         else:
+    #             self.list = result
+    #             # TODO 此处需要解决弹框后代码列表刷新无法执行的问题
+
 
     # 单击查询按钮触发的事件方法
     def query(self):
         query_info = self.ent_find_name.get()
-        self.string.set('')
-        if query_info is None or query_info == '':
-            tkinter.messagebox.showinfo("警告", "查询条件不能为空！")
-            self.get_tree()
-        else:
-            strSql = "where name like '%"+  query_info + "%'"
-            result = self.opr.query(queryby=strSql)
-            self.get_tree()
-            if self.opr.queryStatus:
-                tkinter.messagebox.showinfo("警告", "查询出错，请检查数据库服务是否正常")
-            elif not result:
-                tkinter.messagebox.showinfo("查询结果", "该查询条件没有匹配项！")
-            else:
-                self.list = result
-                # TODO 此处需要解决弹框后代码列表刷新无法执行的问题
+        strSql = "where name like '%" + query_info + "%'"
+        result = self.opr.query(queryby=strSql)
+        self.list = result
+        self.get_tree()
+
+        # 单击查询按钮触发的事件方法
+    def queryall(self):
+        result = self.opr.queryall()
+        self.list = result
+        self.get_tree()
 
     # 调用子窗口，获取子窗口的list数据，进行数据后续处理
     def addGroup(self):
         addWin = AddWindow()
         self.wait_window(addWin)  # 启动子窗口线程
         res = addWin.groupinfo    # 获得子窗口封装后的list数据
-        print(res)
-
-    # def addGroup(self):
-    #     res = self.ask_groupinfo()   # 接收弹窗的数据
-    #     print("回到母窗口了")
-    #     print(res)
-    #     if res is None: return
-
-    #     # 弹窗
-    # def ask_groupinfo(self):
-    #     addWin = AddWindow()
-    #     self.wait_window(addWin)  # 这一句很重要！！！
-    #     return addWin.groupinfo
+        if res is None:
+            print("用户在子窗体中，点击了取消按钮")
+            return
+        self.queryall()
 
 
-    # def addGroup(self):
-    #     creatWin = tk.Toplevel(master=self)
-    #     noLab = Label(creatWin, text="小组编号")
-    #     noLab.grid(row=0)
-    #     nameLab = Label(creatWin, text="小组名称")
-    #     nameLab.grid(row=1)
-    #     headerLab = Label(creatWin, text="负责人")
-    #     headerLab.grid(row=2)
-    #     telLab = Label(creatWin, text="负责人联系电话")
-    #     telLab.grid(row=3)
-    #     noEnt = Entry(creatWin)
-    #     noEnt.grid(row=0,column=1)
-    #     nameEnt = Entry(creatWin)
-    #     nameEnt.grid(row=1, column=1)
-    #     headerEnt = Entry(creatWin)
-    #     headerEnt.grid(row=2, column=1)
-    #     telEnt = Entry(creatWin)
-    #     telEnt.grid(row=3, column=1)
-    #     okBtn = Button(creatWin,text="确定",command=self.insert)
-    #     okBtn.grid(row=4,column=0, columnspan=2)
-    #     width = 600
-    #     height = 360
-    #     screenwidth = self.winfo_screenwidth()
-    #     screenheight = self.winfo_screenheight()
-    #     # 宽高及宽高的初始点坐标
-    #     size = '%dx%d+%d+%d' % (600, 360, (screenwidth - width) / 2, (screenheight - height) / 2)
-    #     creatWin.geometry(size)
-    #     creatWin.mainloop()
+    def deleteGroup(self):
+        no = self.data[0]
+        sql = 'DELETE FROM groupinfo WHERE no = '  + '\'' + no + '\''
+        self.opr = MySqlOpr()
+        self.opr.delete(sql)
+        tkinter.messagebox.showinfo("提醒", "删除成功！")
+        self.queryall()
 
 class AddWindow(tk.Toplevel):
     def __init__(self):
@@ -224,7 +207,7 @@ class AddWindow(tk.Toplevel):
         row2 = tk.Frame(self)
         row2.pack(fill="x", ipadx=1, ipady=1)
         tk.Label(row2, text='联系电话：', width=8).pack(side=tk.LEFT)
-        self.tel = tk.IntVar()
+        self.tel = tk.StringVar()
         tk.Entry(row2, textvariable=self.tel, width=20).pack(side=tk.LEFT)
 
         # 第五行
@@ -245,9 +228,20 @@ class AddWindow(tk.Toplevel):
         # 确定键，将文本框值组装成一个list数据
     def ok(self):
         self.groupinfo = [self.num.get(), self.groupName.get(),self.headerName.get(),self.tel.get()]  # 设置数据
+        if self.groupinfo is None:
+            print("用户在子窗体中，点击了取消按钮")
+            return
+        num = self.groupinfo[0]
+        groupName = self.groupinfo[1]
+        headerName = self.groupinfo[2]
+        tel = self.groupinfo[3]
+        sql = 'INSERT INTO ' + 'groupinfo ' + 'VALUES (\'' + num + '\',\'' + groupName + '\',\'' + headerName + '\',\'' + tel + '\')'
 
+        # 变量定义
+        self.opr = MySqlOpr()
+        self.opr.insert(sql)
+        tkinter.messagebox.showinfo('提示', '新增成功')
         self.destroy()  # 销毁窗口
-
 
         # 取消键，销毁窗口
     def cancel(self):
