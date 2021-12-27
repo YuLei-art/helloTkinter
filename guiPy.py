@@ -121,26 +121,6 @@ class MainWindow(tk.Tk):
             tkinter.messagebox.showinfo("提示", "没有选择到哇")
 
     # 单击查询按钮触发的事件方法
-    # def query(self):
-    #     query_info = self.ent_find_name.get()
-    #     self.string.set('')
-    #     if query_info is None or query_info == '':
-    #         # tkinter.messagebox.showinfo("警告", "查询条件不能为空！")
-    #         self.get_tree()
-    #     else:
-    #         strSql = "where name like '%"+  query_info + "%'"
-    #         result = self.opr.query(queryby=strSql)
-    #         self.get_tree()
-    #         if self.opr.queryStatus:
-    #             tkinter.messagebox.showinfo("警告", "查询出错，请检查数据库服务是否正常")
-    #         elif not result:
-    #             tkinter.messagebox.showinfo("查询结果", "没有查到数据！")
-    #         else:
-    #             self.list = result
-    #             # TODO 此处需要解决弹框后代码列表刷新无法执行的问题
-
-
-    # 单击查询按钮触发的事件方法
     def query(self):
         query_info = self.ent_find_name.get()
         strSql = "where name like '%" + query_info + "%'"
